@@ -5,6 +5,7 @@ import './index.css'
 import App from './App.jsx'
 import { sepolia } from 'viem/chains'
 import { http } from 'viem'
+import { QueryClient } from '@tanstack/react-query'
 
 const projectID = import.meta.env.VITE_PROJECT_ID;
 
@@ -17,6 +18,10 @@ const config = getDefaultConfig({
   }
 
 })
+
+const queryCLient = new QueryClient();
+
+
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

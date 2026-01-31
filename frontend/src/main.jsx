@@ -5,7 +5,8 @@ import './index.css'
 import App from './App.jsx'
 import { sepolia } from 'viem/chains'
 import { http } from 'viem'
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { WagmiProvider } from 'wagmi'
 
 const projectID = import.meta.env.VITE_PROJECT_ID;
 
@@ -25,6 +26,13 @@ const queryCLient = new QueryClient();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <WagmiProvider>
+      <QueryClientProvider>
+        <RainbowKitProvider>
+          <App />
+        </RainbowKitProvider>
+      </QueryClientProvider>
+    </WagmiProvider>
+    
   </StrictMode>,
 )

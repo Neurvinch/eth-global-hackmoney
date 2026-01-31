@@ -22,7 +22,13 @@ const config = getDefaultConfig({
 
 const queryCLient = new QueryClient();
 
-
+const theme = darkTheme({
+  accentColor: '#7b3fe4',
+  accentColorForeground: 'white',
+  borderRadius: 'small',
+  fontStack: 'system',
+  overlayBlur: 'small',
+})
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

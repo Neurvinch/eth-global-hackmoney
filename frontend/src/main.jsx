@@ -32,9 +32,9 @@ const theme = darkTheme({
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <WagmiProvider>
-      <QueryClientProvider>
-        <RainbowKitProvider>
+    <WagmiProvider config={config}>
+      <QueryClientProvider client={queryCLient}>
+        <RainbowKitProvider theme={theme} chains={config.chains}>
           <App />
         </RainbowKitProvider>
       </QueryClientProvider>

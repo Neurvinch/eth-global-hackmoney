@@ -1,7 +1,7 @@
 {
   "name": "backend",
   "module": "index.ts",
-  "type": "module",
+  "type": "commonjs",
   "private": true,
   "devDependencies": {
     "@types/bun": "latest"

@@ -29,3 +29,16 @@ async function connectDatabase() {
     }
     
 }
+
+
+async function disconnectDatabase() {
+
+    await mongoose.disconnect();
+    console.log("MongoDB disconnected successfully");
+}
+
+
+module.exports = {
+    connectDatabase,
+    disconnectDatabase
+}

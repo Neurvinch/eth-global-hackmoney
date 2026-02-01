@@ -10,6 +10,8 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "fs": "^0.0.1-security",
+    "groq-sdk": "^0.37.0",
     "mongoose": "^9.1.5"
   }
 }

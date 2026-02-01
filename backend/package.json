@@ -1,6 +1,6 @@
 {
   "name": "backend",
-  "module": "index.ts",
+  "module": "index.js",
   "type": "commonjs",
   "private": true,
   "devDependencies": {

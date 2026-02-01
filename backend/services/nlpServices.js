@@ -17,12 +17,13 @@ const transcribeAudio = async () => {
             prompt: "The audio may be in Tamil , hindi  telugu, english or any other language. Please transcribe and detect the language accurately. Provide the transcript in the native script."
         });
 
-        console.log("Transcription Result:", transcription);
+        console.log("Transcription Result:", transcription.text);
         console.log("Detected Language:", transcription.language);
 
-        
+        return{text:transcription.text, language:transcription.language};
         
     } catch (error) {
-        
+        console.error("Error during transcription:", error);
+        throw new Error("Failed to transcribe audio");
     }
-}
+};

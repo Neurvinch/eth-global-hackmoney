@@ -13,6 +13,7 @@ const groq = new Groq({
  */
 const transcribeAudio = async (filePath, language) => {
     try {
+        console.log("Transcribing file:", filePath);
         const transcription = await groq.audio.transcriptions.create({
             model: 'whisper-large-v3',
             file: fs.createReadStream(filePath),

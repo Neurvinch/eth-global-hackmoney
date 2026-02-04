@@ -1,6 +1,6 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import {getDefaultConfig, RainbowKitProvider,darkTheme} from '@rainbow-me/rainbowkit'
+import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
 import './index.css'
 import App from './App.jsx'
 import { sepolia } from 'viem/chains'
@@ -8,12 +8,12 @@ import { http } from 'viem'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
 
-const projectID = import.meta.env.VITE_PROJECT_ID;
+const projectID = import.meta.env.VITE_PROJECT_ID || "20f1a02f9fe04c451b09814b7a8423fb";
 
 const config = getDefaultConfig({
   appName: 'Speak-Defi',
   projectId: projectID,
-  chains:[sepolia],
+  chains: [sepolia],
   transports: {
     [sepolia.id]: http("")
   }
@@ -39,6 +39,6 @@ createRoot(document.getElementById('root')).render(
         </RainbowKitProvider>
       </QueryClientProvider>
     </WagmiProvider>
-    
+
   </StrictMode>,
 )

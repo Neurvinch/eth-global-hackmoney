@@ -82,7 +82,7 @@ class TransactionOrchestrator {
     }
 
     async _handleCreateGroup(params) {
-        const {
+        let {
             groupName,
             contributionAmount,
             maxMembers = 10,
@@ -91,7 +91,16 @@ class TransactionOrchestrator {
             minDefaultDiscount = 100
         } = params;
 
-        console.log(`[Orchestrator] Creating group: ${groupName}`);
+        // Validation & Defaults
+        if (!contributionAmount) {
+            throw new Error("Contribution amount is required to create a group.");
+        }
+
+        if (!groupName) {
+            groupName = `Bol-DeFi Circle ${Math.floor(Math.random() * 1000)}`;
+        }
+
+        console.log(`[Orchestrator] Creating group: ${groupName} with ${contributionAmount} USDC`);
 
         const tx = await this.roscaContract.createGroup(
             groupName,

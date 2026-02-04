@@ -1,10 +1,10 @@
 require('dotenv').config();
-const express = require('express');
-const multer = require('multer');
-const cors = require('cors');
-const fs = require('fs');
-const { transcribeAudio, extractIntent } = require('./services/nlpServices');
-const orchestrator = require('./services/orchestrator');
+import express from 'express';
+import multer from 'multer';
+import cors from 'cors';
+import fs from 'fs';
+import { transcribeAudio, extractIntent } from './services/nlpServices';
+import orchestrator from './services/orchestrator';
 
 const app = express();
 const port = process.env.PORT || 3001;

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import LanguageSelector from './components/LanguageSelector';
 import VoiceRecorder from './components/VoiceRecorder';
 import IntentPreview from './components/IntentPreview';
+import ProtocolDashboard from './components/ProtocolDashboard';
 import { processVoice } from './services/api';
 import './index.css';
 
@@ -61,6 +62,8 @@ function App() {
             onRecordingComplete={handleRecordingComplete}
             isProcessing={isProcessing}
           />
+
+          <ProtocolDashboard />
 
           <IntentPreview
             intent={intent}

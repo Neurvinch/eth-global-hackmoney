@@ -37,6 +37,7 @@ contract ROSCA is Ownable, ReentrancyGuard {
         address highestBidder;
         uint256 highestDiscount;   // The discount the bidder is offering (₹1500 in user's example)
         bool auctionSettled;
+        bool isActive;
     }
 
     uint256 public groupCount;

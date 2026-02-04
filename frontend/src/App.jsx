@@ -3,6 +3,8 @@ import LanguageSelector from './components/LanguageSelector';
 import VoiceRecorder from './components/VoiceRecorder';
 import IntentPreview from './components/IntentPreview';
 import ProtocolDashboard from './components/ProtocolDashboard';
+import RecentActivity from './components/RecentActivity';
+import ActiveCircles from './components/ActiveCircles';
 import { processVoice } from './services/api';
 import './index.css';
 
@@ -63,13 +65,18 @@ function App() {
             isProcessing={isProcessing}
           />
 
-          <ProtocolDashboard />
-
           <IntentPreview
             intent={intent}
             onConfirm={handleConfirm}
             onCancel={() => setIntent(null)}
           />
+
+          <div className="discovery-section">
+            <ActiveCircles />
+            <RecentActivity />
+          </div>
+
+          <ProtocolDashboard />
         </main>
       </div>
     </div>

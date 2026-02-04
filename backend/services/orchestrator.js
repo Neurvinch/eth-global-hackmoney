@@ -17,6 +17,8 @@ class TransactionOrchestrator {
         this.roscaContract = null;
         this.initialized = false;
         this.activeAuctions = new Map(); // groupId -> { channelId, endTime, highestBid }
+        this.recentActivity = [];
+        this.MAX_ACTIVITY_LOGS = 10;
     }
 
     /**
@@ -37,15 +39,19 @@ class TransactionOrchestrator {
         this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
 
         const ROSCA_ABI = [
+            "function groupCount() view returns (uint256)",
             "function createGroup(string name, uint256 contribution, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDiscount) external",
             "function joinGroup(uint256 groupId) external",
             "function depositContribution(uint256 groupId) external",
             "function placeBid(uint256 groupId, uint256 discount) external",
             "function settleAuction(uint256 groupId) external",
             "function withdrawDividends() external",
-            "function groups(uint256) view returns (string name, uint256 contribution, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDiscount, uint256 currentCycle, uint256 cycleStartTime, uint256 totalEscrow)",
+            "function groups(uint256) view returns (string name, uint256 contributionAmount, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDefaultDiscount, uint256 currentCycle, uint256 cycleStartTime, uint256 totalEscrow, bool auctionSettled, bool isActive)",
             "function getHighestBid(uint256 groupId) view returns (address bidder, uint256 discount)",
-            "event BidPlaced(uint256 indexed groupId, address indexed bidder, uint256 discount)"
+            "event GroupStarted(uint256 indexed groupId, string name)",
+            "event ContributionDeposited(uint256 indexed groupId, address indexed member, uint256 amount)",
+            "event BidPlaced(uint256 indexed groupId, address indexed bidder, uint256 discount)",
+            "event AuctionWinnerSelected(uint256 indexed groupId, address winner, uint256 payout, uint256 dividendPerMember)"
         ];
 
         const ROSCA_ADDRESS = process.env.ROSCA_CONTRACT_ADDRESS;
@@ -53,12 +59,15 @@ class TransactionOrchestrator {
 
         this.roscaContract = new ethers.Contract(ROSCA_ADDRESS, ROSCA_ABI, this.wallet);
 
+        // --- Event Listeners ---
+        this._setupEventListeners();
+
         // --- Enable Premium Flows ---
         try {
             console.log('[Orchestrator] Initializing Yellow Network...');
             // await yellowService.initialize();
             // await yellowService.authenticate();
-            
+
             console.log('[Orchestrator] Initializing Arc Treasury...');
             await treasuryService.initialize();
         } catch (error) {
@@ -67,6 +76,89 @@ class TransactionOrchestrator {
 
         this.initialized = true;
         console.log('[Orchestrator] Ready to process intents');
+    }
+
+    _setupEventListeners() {
+        this.roscaContract.on("GroupStarted", (groupId, name, event) => {
+            this._addActivity({
+                type: 'GROUP_STARTED',
+                groupId: groupId.toString(),
+                name,
+                txHash: event.log.transactionHash
+            });
+        });
+
+        this.roscaContract.on("ContributionDeposited", (groupId, member, amount, event) => {
+            this._addActivity({
+                type: 'CONTRIBUTION',
+                groupId: groupId.toString(),
+                member,
+                amount: ethers.formatUnits(amount, 6),
+                txHash: event.log.transactionHash
+            });
+        });
+
+        this.roscaContract.on("BidPlaced", (groupId, bidder, discount, event) => {
+            this._addActivity({
+                type: 'BID_PLACED',
+                groupId: groupId.toString(),
+                bidder,
+                discount: ethers.formatUnits(discount, 6),
+                txHash: event.log.transactionHash
+            });
+        });
+
+        this.roscaContract.on("AuctionWinnerSelected", (groupId, winner, payout, dividend, event) => {
+            this._addActivity({
+                type: 'AUCTION_SETTLED',
+                groupId: groupId.toString(),
+                winner,
+                payout: ethers.formatUnits(payout, 6),
+                txHash: event.log.transactionHash
+            });
+        });
+    }
+
+    _addActivity(item) {
+        item.timestamp = Date.now();
+        this.recentActivity.unshift(item);
+        if (this.recentActivity.length > this.MAX_ACTIVITY_LOGS) {
+            this.recentActivity.pop();
+        }
+        console.log(`[Activity] ${item.type}: Group ${item.groupId}`);
+    }
+
+    async getActiveCircles() {
+        if (!this.initialized) await this.initialize();
+
+        try {
+            const count = await this.roscaContract.groupCount();
+            const circles = [];
+
+            // Get last 5 circles for dashboard
+            const start = count > 5n ? count - 4n : 1n;
+            for (let i = count; i >= start; i--) {
+                const g = await this.roscaContract.groups(i);
+                if (g.isActive) {
+                    circles.push({
+                        id: i.toString(),
+                        name: g.name,
+                        contribution: ethers.formatUnits(g.contributionAmount, 6),
+                        members: g.maxMembers.toString(),
+                        cycle: g.currentCycle.toString(),
+                        escrow: ethers.formatUnits(g.totalEscrow, 6)
+                    });
+                }
+            }
+            return circles;
+        } catch (error) {
+            console.error("Error fetching circles:", error);
+            return [];
+        }
+    }
+
+    async getRecentActivity() {
+        return this.recentActivity;
     }
 
     async executeIntent(intent) {
@@ -159,20 +251,20 @@ class TransactionOrchestrator {
 
     async _handleBid(params) {
         const { groupId, discountAmount } = params;
-        
+
         console.log(`[Orchestrator] Processing bid for Group ${groupId}`);
 
         // Yellow Network Flow: Record off-chain bid first (Instant)
         await yellowService.recordBid(groupId, this.wallet.address, discountAmount);
-        
+
         // Then sync to chain
         const tx = await this.roscaContract.placeBid(groupId, ethers.parseUnits(discountAmount.toString(), 6));
         const receipt = await tx.wait();
-        
-        return { 
-            success: true, 
-            txHash: receipt.hash, 
-            groupId, 
+
+        return {
+            success: true,
+            txHash: receipt.hash,
+            groupId,
             bidAmount: discountAmount,
             mode: 'Yellow-Optimized'
         };

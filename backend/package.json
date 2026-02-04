@@ -1,5 +1,9 @@
 {
   "name": "backend",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "bun --watch index.js"
+  },
   "module": "index.js",
   "type": "commonjs",
   "private": true,
@@ -10,8 +14,13 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
     "fs": "^0.0.1-security",
     "groq-sdk": "^0.37.0",
-    "mongoose": "^9.1.5"
+    "lodash": "^4.17.23",
+    "mongoose": "^9.1.5",
+    "multer": "^2.0.2"
   }
 }

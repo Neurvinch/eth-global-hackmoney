@@ -94,14 +94,23 @@ app.post('/api/execute-intent', async (req, res) => {
 });
 
 /**
- * Health check endpoint
+ * Protocol Status Endpoint
  */
-app.get('/api/health', (req, res) => {
-    res.json({
-        status: 'running',
-        service: 'Bol-DeFi Backend',
-        timestamp: new Date().toISOString()
-    });
+app.get('/api/protocol-status', async (req, res) => {
+    try {
+        const intent = { type: 'CHECK_TREASURY' };
+        const treasury = await orchestrator.executeIntent(intent);
+
+        res.json({
+            roscaAddress: process.env.ROSCA_CONTRACT_ADDRESS,
+            arcBalance: treasury.balance,
+            yellowStatus: 'Online (Sandbox)',
+            ensIdentity: 'bol-defi.eth',
+            network: 'Sepolia'
+        });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
 app.listen(port, () => {

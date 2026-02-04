@@ -29,7 +29,7 @@ body {
 }
 
 .main-card {
-    max-width: 400px;
+    max-width: 500px;
     width: 100%;
     background: var(--card-bg);
     padding: 2rem;
@@ -50,6 +50,7 @@ body {
     margin-bottom: 0.5rem;
     background: linear-gradient(to right, #60a5fa, #a855f7);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -233,4 +234,68 @@ body {
     50% {
         opacity: .5;
     }
+}
+
+/* Protocol Dashboard Styles */
+.protocol-dashboard {
+    margin: 1.5rem 0;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+}
+
+.section-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    font-weight: 700;
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.status-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.value {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.highlighting {
+    color: #4ade80;
+    text-shadow: 0 0 10px rgba(74, 222, 128, 0.2);
+}
+
+.status-online {
+    color: #60a5fa;
+}
+
+.address {
+    font-family: monospace;
+    opacity: 0.8;
+    font-size: 0.75rem;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
 }

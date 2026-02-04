@@ -1,5 +1,6 @@
-const { ethers } = require('ethers');
-require('dotenv').config();
+import { ethers } from 'ethers';
+import dotenv from 'dotenv';
+dotenv.config();
 
 /**
  * @title Bol-DeFi ENS Service
@@ -9,7 +10,6 @@ require('dotenv').config();
 class ENSService {
     constructor() {
         // Connect to Mainnet for ENS resolution (ENS is primarily on Mainnet)
-        // In local development, you might use a mock or a specific testnet ENS.
         const rpcUrl = process.env.MAINNET_RPC_URL || "https://rpc.ankr.com/eth";
         this.provider = new ethers.JsonRpcProvider(rpcUrl);
     }
@@ -50,10 +50,6 @@ class ENSService {
     /**
      * Sets a text record on an ENS name.
      * NOTE: This requires a signer (wallet) and costs gas.
-     * @param {string} name - ENS Name
-     * @param {string} key - The text record key
-     * @param {string} value - The text to store
-     * @param {ethers.Signer} signer - The authorized wallet for the ENS name
      */
     async setText(name, key, value, signer) {
         try {
@@ -78,4 +74,5 @@ class ENSService {
     }
 }
 
-module.exports = new ENSService();
+const ensService = new ENSService();
+export default ensService;

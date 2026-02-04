@@ -1,6 +1,7 @@
 const { ethers } = require('ethers');
 const yellowService = require('./yellowService');
 const ensService = require('./ensService');
+const treasuryService = require('./treasuryService');
 const { extractIntent } = require('./nlpServices');
 require('dotenv').config();
 
@@ -29,10 +30,13 @@ class TransactionOrchestrator {
         console.log('[Orchestrator] Initializing blockchain connections...');
 
         // Setup provider and wallet
-        this.provider = new ethers.JsonRpcProvider(
-            process.env.ALCHEMY_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
-        );
+        const networkKey = process.env.NETWORK || 'arc_testnet';
+        const RPC_URLS = {
+            arc_testnet: 'https://rpc.testnet.arc.network',
+            sepolia: process.env.ALCHEMY_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
+        };
 
+        this.provider = new ethers.JsonRpcProvider(RPC_URLS[networkKey]);
         this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
 
         // Load ROSCA contract (you'll need to deploy and set this address)

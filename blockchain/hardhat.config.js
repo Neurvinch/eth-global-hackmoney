@@ -1,8 +1,11 @@
-require("@nomicfoundation/hardhat-toolbox");
+import "@nomicfoundation/hardhat-toolbox";
+// import dotenv from "dotenv";
+// dotenv.config();
 
 /** @type import('hardhat/config').HardhatUserConfig */
-module.exports = {
+export default {
     solidity: "0.8.20",
+    /*
     networks: {
         hardhat: {},
         sepolia: {
@@ -14,5 +17,13 @@ module.exports = {
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
             chainId: 5042002
         },
+    },
+    */
+};
+arc_testnet: {
+    url: process.env.ARC_RPC_URL || "https://rpc.testnet.arc.network",
+        accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+            chainId: 5042002
+},
     },
 };

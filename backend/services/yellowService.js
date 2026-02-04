@@ -1,21 +1,15 @@
-const { NitroliteClient, WalletStateSigner, createECDSAMessageSigner } = require('@erc7824/nitrolite');
-const { createPublicClient, createWalletClient, http } = require('viem');
-const { sepolia } = require('viem/chains');
-const { privateKeyToAccount } = require('viem/accounts');
-const { generatePrivateKey } = require('viem/accounts');
-const WebSocket = require('ws');
-require('dotenv').config();
+import { NitroliteClient, WalletStateSigner, createECDSAMessageSigner, createAuthRequestMessage, createCreateChannelMessage, createResizeChannelMessage, createCloseChannelMessage } from '@erc7824/nitrolite';
+import { createPublicClient, createWalletClient, http } from 'viem';
+import { sepolia } from 'viem/chains';
+import { privateKeyToAccount, generatePrivateKey } from 'viem/accounts';
+import WebSocket from 'ws';
+import dotenv from 'dotenv';
+dotenv.config();
 
 /**
  * @title Yellow Network Integration Service
  * @dev Production-ready Yellow Network Nitrolite SDK integration for Bol-DeFi.
  * Uses state channels for instant, zero-gas bidding and contributions.
- * 
- * Flow:
- * 1. Authenticate with Yellow Network
- * 2. Create a channel for the ROSCA group
- * 3. Members bid and contribute instantly off-chain
- * 4. Close channel and settle final state on-chain
  */
 class YellowNetworkService {
     constructor() {
@@ -31,6 +25,7 @@ class YellowNetworkService {
         this.ADJUDICATOR_ADDRESS = '0x7c7ccbc98469190849BCC6c926307794fDfB11F2';
         this.YTEST_USD_TOKEN = '0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238';
         this.SANDBOX_WS = 'wss://clearnet-sandbox.yellow.com/ws';
+        this.messagePromises = new Map();
     }
 
     /**
@@ -90,7 +85,6 @@ class YellowNetworkService {
 
     /**
      * Step 2: Authenticate with the Yellow Network
-     * This creates a temporary session key for signing off-chain messages
      */
     async authenticate() {
         if (this.isAuthenticated) {
@@ -104,9 +98,6 @@ class YellowNetworkService {
         const sessionPrivateKey = generatePrivateKey();
         this.sessionSigner = createECDSAMessageSigner(sessionPrivateKey);
         const sessionAccount = privateKeyToAccount(sessionPrivateKey);
-
-        // Create auth request
-        const { createAuthRequestMessage } = require('@erc7824/nitrolite');
 
         const authRequestMsg = await createAuthRequestMessage({
             address: this.account.address,
@@ -139,8 +130,6 @@ class YellowNetworkService {
 
         console.log(`[Yellow] Creating channel for group ${groupId}...`);
 
-        const { createCreateChannelMessage } = require('@erc7824/nitrolite');
-
         const createChannelMsg = await createCreateChannelMessage(
             this.sessionSigner,
             {
@@ -169,7 +158,6 @@ class YellowNetworkService {
 
     /**
      * Step 4: Fund the channel from Unified Balance
-     * Users get ytest.usd from the faucet into their Unified Balance
      */
     async fundChannel(groupId, amount) {
         const channelId = this.activeChannels.get(groupId);
@@ -178,8 +166,6 @@ class YellowNetworkService {
         }
 
         console.log(`[Yellow] Funding channel ${channelId} with ${amount}...`);
-
-        const { createResizeChannelMessage } = require('@erc7824/nitrolite');
 
         const resizeMsg = await createResizeChannelMessage(
             this.sessionSigner,
@@ -200,14 +186,11 @@ class YellowNetworkService {
     }
 
     /**
-     * Step 5: Record off-chain bid (instant, zero-gas)
-     * In production, this would use Yellow's payment protocol
+     * Step 5: Record off-chain bid
      */
     async recordBid(groupId, bidder, discountAmount) {
         console.log(`[Yellow] Recording off-chain bid: ${bidder} -> ${discountAmount}`);
 
-        // In real implementation, this would create a signed off-chain payment
-        // For now, we just track it locally
         return {
             groupId,
             bidder,
@@ -227,8 +210,6 @@ class YellowNetworkService {
         }
 
         console.log(`[Yellow] Closing channel ${channelId}...`);
-
-        const { createCloseChannelMessage } = require('@erc7824/nitrolite');
 
         const closeMsg = await createCloseChannelMessage(
             this.sessionSigner,
@@ -275,8 +256,6 @@ class YellowNetworkService {
     // --- Internal Helper Methods ---
 
     _setupMessageHandlers() {
-        this.messagePromises = new Map();
-
         this.ws.on('message', (data) => {
             const response = JSON.parse(data.toString());
             const type = response.res?.[0];
@@ -320,4 +299,5 @@ class YellowNetworkService {
     }
 }
 
-module.exports = new YellowNetworkService();
+const yellowService = new YellowNetworkService();
+export default yellowService;

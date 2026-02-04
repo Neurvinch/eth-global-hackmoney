@@ -24,9 +24,26 @@ function App() {
     }
   };
 
-  const handleConfirm = () => {
-    alert(`Executing: ${intent.type}`);
-    setIntent(null);
+  const handleConfirm = async () => {
+    try {
+      setIsProcessing(true);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const response = await fetch(`${API_URL}/api/execute-intent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intent })
+      });
+
+      if (!response.ok) throw new Error('Execution failed');
+
+      const result = await response.json();
+      alert(`Success! ${result.message}`);
+      setIntent(null);
+    } catch (error) {
+      alert(`Error executing intent: ${error.message}`);
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

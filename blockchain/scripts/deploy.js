@@ -1,4 +1,4 @@
-const hre = require("hardhat");
+import hre from "hardhat";
 
 async function main() {
     const [deployer] = await hre.ethers.getSigners();
@@ -14,6 +14,7 @@ async function main() {
 
     console.log(`ROSCA deployed to: ${await rosca.getAddress()}`);
 }
+
 
 main().catch((error) => {
     console.error(error);

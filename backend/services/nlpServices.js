@@ -1,6 +1,7 @@
-const { Groq } = require("groq-sdk");
-const fs = require('fs');
-require('dotenv').config();
+import { Groq } from "groq-sdk";
+import fs from 'fs';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const groq = new Groq({
     apiKey: process.env.GROQ_API_KEY,
@@ -11,7 +12,7 @@ const groq = new Groq({
  * @param {string} filePath - Path to the audio file
  * @param {string} language - Hint language code (en, hi, ta, te)
  */
-const transcribeAudio = async (filePath, language) => {
+export const transcribeAudio = async (filePath, language) => {
     try {
         console.log("Transcribing file:", filePath);
         const transcription = await groq.audio.transcriptions.create({
@@ -37,7 +38,7 @@ const transcribeAudio = async (filePath, language) => {
  * @param {string} transcript - The text to analyze
  * @param {string} language - The detected/provided language
  */
-const extractIntent = async (transcript, language) => {
+export const extractIntent = async (transcript, language) => {
     try {
         const prompt = `
             You are the Bol-DeFi AI intent extractor. 
@@ -69,9 +70,4 @@ const extractIntent = async (transcript, language) => {
         console.error("Error during intent extraction:", error);
         throw new Error("Failed to extract intent");
     }
-};
-
-module.exports = {
-    transcribeAudio,
-    extractIntent
 };

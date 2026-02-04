@@ -11,7 +11,15 @@ async function main() {
 
     // Create deployment transaction
     console.log("Sending deployment transaction...");
-    const rosca = await ROSCA.deploy(mockUsdcAddress);
+
+    const feeData = await hre.ethers.provider.getFeeData();
+    const overrides = {
+        maxFeePerGas: feeData.maxFeePerGas ? feeData.maxFeePerGas * 300n / 100n : undefined,
+        maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ? feeData.maxPriorityFeePerGas * 300n / 100n : undefined,
+    };
+    console.log(`Using higher gas: maxFeePerGas=${overrides.maxFeePerGas}, maxPriorityFeePerGas=${overrides.maxPriorityFeePerGas}`);
+
+    const rosca = await ROSCA.deploy(mockUsdcAddress, overrides);
 
     // In Ethers v6, deploymentTransaction() gives the tx response
     const deploymentTx = rosca.deploymentTransaction();

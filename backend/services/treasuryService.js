@@ -1,15 +1,10 @@
-const { ethers } = require('ethers');
-require('dotenv').config();
+import { ethers } from 'ethers';
+import dotenv from 'dotenv';
+dotenv.config();
 
 /**
  * @title Arc Treasury Service
  * @dev Manages USDC treasury operations for Bol-DeFi ROSCA platform.
- * Handles deposits, withdrawals, and settlement distribution.
- * 
- * Arc Protocol provides institutional-grade treasury management with:
- * - Multi-signature security
- * - Automated compliance
- * - Real-time settlement
  */
 class TreasuryService {
     constructor() {
@@ -68,8 +63,6 @@ class TreasuryService {
 
     /**
      * Deposit USDC into the treasury vault
-     * @param {string} userAddress - Address depositing funds
-     * @param {string} amount - Amount in USDC (human-readable, e.g., "100.50")
      */
     async depositUSDC(userAddress, amount) {
         if (!this.initialized) await this.initialize();
@@ -113,9 +106,6 @@ class TreasuryService {
 
     /**
      * Distribute USDC from treasury to a recipient
-     * @param {string} recipientAddress - Winner or dividend recipient
-     * @param {string} amount - Amount in USDC
-     * @param {string} reason - Reason for distribution (e.g., "auction_winner", "dividend")
      */
     async distributeUSDC(recipientAddress, amount, reason = 'payout') {
         if (!this.initialized) await this.initialize();
@@ -153,8 +143,7 @@ class TreasuryService {
     }
 
     /**
-     * Batch distribute USDC to multiple recipients (e.g., dividend distribution)
-     * @param {Array} recipients - Array of {address, amount} objects
+     * Batch distribute USDC to multiple recipients
      */
     async batchDistribute(recipients) {
         if (!this.initialized) await this.initialize();
@@ -221,7 +210,6 @@ class TreasuryService {
 
     /**
      * Approve ROSCA contract to spend USDC on behalf of treasury
-     * This is needed for the ROSCA contract to pull funds for contributions
      */
     async approveROSCAContract(roscaAddress, amount) {
         if (!this.initialized) await this.initialize();
@@ -244,4 +232,5 @@ class TreasuryService {
     }
 }
 
-module.exports = new TreasuryService();
+const treasuryService = new TreasuryService();
+export default treasuryService;

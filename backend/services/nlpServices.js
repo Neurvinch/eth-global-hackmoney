@@ -50,9 +50,13 @@ export const extractIntent = async (transcript, language) => {
             {
               "type": "CREATE_GROUP | JOIN_GROUP | CONTRIBUTE | BID | FINALIZE",
               "params": {
-                "amount": number (if any),
+                "contributionAmount": number (required for CREATE_GROUP),
                 "groupName": "string" (if any),
-                "duration": number (if any days/weeks)
+                "maxMembers": number (default 10),
+                "cycleDuration": number (in seconds),
+                "auctionDuration": number (in seconds),
+                "groupId": number (required for JOIN/CONTRIBUTE/BID/FINALIZE),
+                "discountAmount": number (required for BID)
               },
               "summary": "A concise, friendly explanation of what the user wants to do in English.",
               "confidence": 0.0 to 1.0

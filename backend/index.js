@@ -113,6 +113,19 @@ app.get('/api/protocol-status', async (req, res) => {
     }
 });
 
+/**
+ * Activity & Data Discovery
+ */
+app.get('/api/activity', async (req, res) => {
+    const activity = await orchestrator.getRecentActivity();
+    res.json(activity);
+});
+
+app.get('/api/circles', async (req, res) => {
+    const circles = await orchestrator.getActiveCircles();
+    res.json(circles);
+});
+
 app.listen(port, () => {
     console.log(`🚀 Bol-DeFi Server Orchestrator running on port ${port}`);
 

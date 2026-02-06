@@ -3,6 +3,7 @@ import { Users, Share2, Plus, ArrowUpRight, CheckCircle2, LayoutDashboard, Globe
 import { useAccount } from 'wagmi';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 const CircleDashboard = () => {
     const { address } = useAccount();
@@ -170,15 +171,16 @@ const CircleDashboard = () => {
                                     </div>
 
                                     <div className="mt-5 pt-4 border-t border-white/5">
-                                        {circle.isMember ? (
-                                            <button className="w-full bg-white/5 hover:bg-white/10 p-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all">
-                                                Manage Circle <ArrowUpRight size={14} />
-                                            </button>
-                                        ) : (
-                                            <button className="w-full bg-indigo-600 hover:bg-indigo-500 p-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all shadow-lg shadow-indigo-600/20 active:scale-95">
-                                                Join Circle <Plus size={14} />
-                                            </button>
-                                        )}
+                                        <Link
+                                            to={`/group/${circle.id}`}
+                                            className={`w-full p-2.5 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all no-underline ${circle.isMember
+                                                ? 'bg-white/5 hover:bg-white/10'
+                                                : 'bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 active:scale-95'
+                                                }`}
+                                        >
+                                            {circle.isMember ? 'Manage Circle' : 'Join Circle'}
+                                            {circle.isMember ? <ArrowUpRight size={14} /> : <Plus size={14} />}
+                                        </Link>
                                     </div>
                                 </motion.div>
                             );

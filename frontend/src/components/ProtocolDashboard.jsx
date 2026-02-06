@@ -50,8 +50,8 @@ const ProtocolDashboard = () => {
                         <span className="text-dim text-xs font-bold uppercase">Scaling Flow</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${status?.yellowStatus.includes('Online') ? 'bg-success shadow-[0_0_8px_#10b981]' : 'bg-danger'}`}></div>
-                        <span className="font-bold text-xs">{status?.yellowStatus}</span>
+                        <div className={`w-2 h-2 rounded-full ${(status?.yellowStatus?.includes('Online')) ? 'bg-success shadow-[0_0_8px_#10b981]' : 'bg-danger'}`}></div>
+                        <span className="font-bold text-xs">{status?.yellowStatus || 'Offline'}</span>
                     </div>
                 </div>
 

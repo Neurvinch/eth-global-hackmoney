@@ -105,20 +105,35 @@ app.post('/api/execute-intent', async (req, res) => {
  */
 app.get('/api/protocol-status', async (req, res) => {
     try {
-        const intent = { type: 'CHECK_TREASURY' };
-        const treasury = await orchestrator.executeIntent(intent);
-        const memberStatus = await orchestrator.getMemberStatus(orchestrator.wallet.address);
+        console.log('[API] Fetching protocol status...');
+
+        let treasury = { balance: '0.00' };
+        try {
+            const intent = { type: 'CHECK_TREASURY' };
+            treasury = await orchestrator.executeIntent(intent);
+        } catch (e) {
+            console.error('[API] Treasury check failed:', e.message);
+        }
+
+        let dividends = '0.00';
+        try {
+            const status = await orchestrator.getMemberStatus(orchestrator.wallet.address);
+            dividends = status.dividends;
+        } catch (e) {
+            console.error('[API] Member status check failed:', e.message);
+        }
 
         res.json({
-            roscaAddress: process.env.ROSCA_CONTRACT_ADDRESS,
-            arcBalance: treasury.balance,
-            dividends: memberStatus.dividends,
+            roscaAddress: process.env.ROSCA_CONTRACT_ADDRESS || '0x...',
+            arcBalance: treasury.balance || '0.00',
+            dividends: dividends,
             yellowStatus: yellowService.isAuthenticated ? 'Online (Sandbox)' : 'Offline/Connecting',
             ensIdentity: 'bol-defi.eth',
             network: process.env.NETWORK || 'Sepolia'
         });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('[API] Critical failure in protocol-status:', error);
+        res.status(500).json({ error: 'Internal Server Error', details: error.message });
     }
 });
 
@@ -131,7 +146,8 @@ app.get('/api/activity', async (req, res) => {
 });
 
 app.get('/api/circles', async (req, res) => {
-    const circles = await orchestrator.getActiveCircles();
+    const { address } = req.query;
+    const circles = await orchestrator.getActiveCircles(address);
     res.json(circles);
 });
 

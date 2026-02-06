@@ -268,34 +268,53 @@ class YellowNetworkService {
         });
     }
 
+    async _withTimeout(promise, ms, operationName) {
+        let timeoutId;
+        const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => {
+                reject(new Error(`Yellow Network operation "${operationName}" timed out after ${ms}ms`));
+            }, ms);
+        });
+
+        try {
+            return await Promise.race([promise, timeoutPromise]);
+        } finally {
+            clearTimeout(timeoutId);
+        }
+    }
+
     async _waitForAuth() {
-        return new Promise((resolve) => {
+        const promise = new Promise((resolve) => {
             this.messagePromises.set('auth_success', resolve);
         });
+        return this._withTimeout(promise, 10000, 'Authentication');
     }
 
     async _waitForChannelCreation() {
-        return new Promise((resolve) => {
+        const promise = new Promise((resolve) => {
             this.messagePromises.set('create_channel', (response) => {
                 resolve(response.res[2]);
             });
         });
+        return this._withTimeout(promise, 15000, 'Channel Creation');
     }
 
     async _waitForResize() {
-        return new Promise((resolve) => {
+        const promise = new Promise((resolve) => {
             this.messagePromises.set('resize_channel', (response) => {
                 resolve(response.res[2]);
             });
         });
+        return this._withTimeout(promise, 15000, 'Resize Channel');
     }
 
     async _waitForClose() {
-        return new Promise((resolve) => {
+        const promise = new Promise((resolve) => {
             this.messagePromises.set('close_channel', (response) => {
                 resolve(response.res[2]);
             });
         });
+        return this._withTimeout(promise, 15000, 'Close Channel');
     }
 }
 

@@ -27,7 +27,7 @@ contract ROSCA is Ownable, ReentrancyGuard {
         uint256 currentCycle;      // Index of current rotation
         uint256 cycleStartTime;    // Timestamp when current cycle started
         uint256 totalEscrow;       // Total USDC locked in current cycle
-        
+        address creator;
         address[] members;
         mapping(address => bool) isMember;
         mapping(address => bool) hasWon;
@@ -42,6 +42,10 @@ contract ROSCA is Ownable, ReentrancyGuard {
 
     uint256 public groupCount;
     mapping(uint256 => Group) public groups;
+
+    function isMemberOf(uint256 _groupId, address _user) external view returns (bool) {
+        return groups[_groupId].isMember[_user];
+    }
     
     // Member dividends (undrawn discount distributions)
     mapping(address => uint256) public userBalance;
@@ -90,6 +94,11 @@ contract ROSCA is Ownable, ReentrancyGuard {
         g.minDefaultDiscount = _minDefaultDiscount;
         g.cycleStartTime = block.timestamp;
         g.isActive = true;
+        g.creator = msg.sender;
+        
+        // Creator is the first member
+        g.members.push(msg.sender);
+        g.isMember[msg.sender] = true;
 
         emit GroupStarted(groupCount, _name);
     }

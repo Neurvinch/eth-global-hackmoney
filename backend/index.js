@@ -42,22 +42,50 @@ app.post('/api/process-voice', upload.single('audio'), async (req, res) => {
     }
 
     const audioPath = req.file.path;
+    const fileSize = req.file.size;
     const requestedLanguage = req.body.language || 'en';
 
     try {
         console.log(`--- Processing Voice Stream (${requestedLanguage}) ---`);
+        console.log(`[Multer] Received: ${req.file.originalname}, Size: ${fileSize} bytes`);
 
         // 1. Transcription (Whisper)
         const { text, language: detectedLanguage } = await transcribeAudio(audioPath, requestedLanguage);
 
         // 2. Intent Extraction (Llama-3)
-        const intent = await extractIntent(text, detectedLanguage || requestedLanguage);
+        let intent;
+        if (!text || text.trim().length === 0) {
+            intent = {
+                type: 'CREATE_GROUP',
+                params: {
+                    groupName: "New Savings Circle",
+                    contributionAmount: 50,
+                    maxMembers: 10
+                },
+                summary: "I couldn't hear you clearly, but I've prepared a default 'Create Group' intent for you. Would you like to start a 50 USDC circle?",
+                confidence: 0.5,
+                isFallback: true
+            };
+        } else {
+            intent = await extractIntent(text, detectedLanguage || requestedLanguage);
 
-        console.log('Intent Detected:', intent);
+            // If AI is confused, give it a helpful push
+            if (intent.type === 'NONE' || intent.confidence < 0.3) {
+                intent = {
+                    type: 'CREATE_GROUP',
+                    params: {
+                        groupName: "Native Savings Circle",
+                        contributionAmount: 25,
+                        maxMembers: 5
+                    },
+                    summary: `I heard "${text}", which sounds like you might want to start a circle. How about creating one for 25 USDC?`,
+                    confidence: 0.6,
+                    isFallback: true
+                };
+            }
+        }
 
-        // 3. Execute Intent via Orchestrator (optional - can be manual confirmation)
-        // For demo purposes, we return the intent for frontend confirmation
-        // In production, executeIntent would be called after user confirms in UI
+        console.log('Intent Result (Final):', intent);
 
         res.json(intent);
 
@@ -90,12 +118,31 @@ app.post('/api/execute-intent', async (req, res) => {
 
         res.json({
             success: true,
-            result,
+            ...result, // Spread result to root for easier frontend access
             message: `Successfully executed ${intent.type}`
         });
 
     } catch (error) {
         console.error('Execution Error:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * Direct UI Action Hub
+ * Used for explicit button clicks (Join, Bid, etc)
+ */
+app.post('/api/execute-single-action', async (req, res) => {
+    try {
+        const { action } = req.body;
+        // Map UI "action" to orchestrator "intent"
+        const result = await orchestrator.executeIntent(action);
+        res.json({
+            success: true,
+            ...result
+        });
+    } catch (error) {
+        console.error('[API] Action failed:', error);
         res.status(500).json({ error: error.message });
     }
 });
@@ -149,6 +196,14 @@ app.get('/api/circles', async (req, res) => {
     const { address } = req.query;
     const circles = await orchestrator.getActiveCircles(address);
     res.json(circles);
+});
+
+app.get('/api/circles/:id', async (req, res) => {
+    const { id } = req.params;
+    const { address } = req.query;
+    const group = await orchestrator.getGroupInfo(id, address);
+    if (!group) return res.status(404).json({ error: 'Group not found' });
+    res.json(group);
 });
 
 app.listen(port, () => {

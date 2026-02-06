@@ -4,22 +4,19 @@ async function main() {
     const [deployer] = await hre.ethers.getSigners();
     console.log("Deploying contracts with the account:", deployer.address);
 
-    // Mock USDC address for Sepolia (replace with actual or mock)
-    const mockUsdcAddress = "0x94a10348618eb3a182f7e7658b4221798365d96a"; // Example Sepolia USDC
+    // USDC address (from env or fallback to Arc/Sepolia native)
+    const usdcAddress = process.env.USDC_ADDRESS || "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"; // Sepolia USDC
+    console.log("Using USDC at:", usdcAddress);
 
     const ROSCA = await hre.ethers.getContractFactory("ROSCA");
-
-    // Create deployment transaction
-    console.log("Sending deployment transaction...");
 
     const feeData = await hre.ethers.provider.getFeeData();
     const overrides = {
         maxFeePerGas: feeData.maxFeePerGas ? feeData.maxFeePerGas * 300n / 100n : undefined,
         maxPriorityFeePerGas: feeData.maxPriorityFeePerGas ? feeData.maxPriorityFeePerGas * 300n / 100n : undefined,
     };
-    console.log(`Using higher gas: maxFeePerGas=${overrides.maxFeePerGas}, maxPriorityFeePerGas=${overrides.maxPriorityFeePerGas}`);
 
-    const rosca = await ROSCA.deploy(mockUsdcAddress, overrides);
+    const rosca = await ROSCA.deploy(usdcAddress, overrides);
 
     // In Ethers v6, deploymentTransaction() gives the tx response
     const deploymentTx = rosca.deploymentTransaction();

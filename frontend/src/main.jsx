@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { getDefaultConfig, RainbowKitProvider, darkTheme } from '@rainbow-me/rainbowkit'
 import './index.css'
 import App from './App.jsx'
-import { sepolia } from 'viem/chains'
+import { arcTestnet, sepolia } from 'viem/chains'
 import { http } from 'viem'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { WagmiProvider } from 'wagmi'
@@ -13,9 +13,10 @@ const projectID = import.meta.env.VITE_PROJECT_ID || "20f1a02f9fe04c451b09814b7a
 const config = getDefaultConfig({
   appName: 'Speak-Defi',
   projectId: projectID,
-  chains: [sepolia],
+  chains: [sepolia, arcTestnet],
   transports: {
-    [sepolia.id]: http("")
+    [sepolia.id]: http(""),
+    [arcTestnet.id]: http("https://arc-testnet.g.alchemy.com/v2/ByaOVE3FIIAjYOQ9IWDMz")
   }
 
 })

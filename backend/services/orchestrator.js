@@ -26,127 +26,91 @@ class TransactionOrchestrator {
      */
     async initialize() {
         if (this.initialized) return;
+        if (this.initializing) return this.initPromise;
 
-        console.log('[Orchestrator] Initializing blockchain connections...');
+        this.initializing = true;
+        this.initPromise = (async () => {
+            console.log('[Orchestrator] Initializing blockchain connections...');
 
-        const networkKey = process.env.NETWORK || 'sepolia';
-        const RPC_URLS = {
-            arc_testnet: process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network',
-            sepolia: process.env.ALCHEMY_RPC_URL || process.env.SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
-        };
+            const networkKey = process.env.NETWORK || 'sepolia';
+            const RPC_URLS = {
+                arc_testnet: process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network',
+                sepolia: process.env.ALCHEMY_RPC_URL || process.env.SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
+            };
 
-        this.provider = new ethers.JsonRpcProvider(RPC_URLS[networkKey]);
-        this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
+            this.provider = new ethers.JsonRpcProvider(RPC_URLS[networkKey]);
+            this.wallet = new ethers.Wallet(process.env.PRIVATE_KEY, this.provider);
 
-        const ROSCA_ABI = [
-            "function groupCount() view returns (uint256)",
-            "function createGroup(string name, uint256 contribution, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDiscount) external",
-            "function joinGroup(uint256 groupId) external",
-            "function depositContribution(uint256 groupId) external",
-            "function placeBid(uint256 groupId, uint256 discount) external",
-            "function settleAuction(uint256 groupId) external",
-            "function withdrawDividends() external",
-            "function groups(uint256) view returns (string name, uint256 contributionAmount, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDefaultDiscount, uint256 currentCycle, uint256 cycleStartTime, uint256 totalEscrow, bool auctionSettled, bool isActive)",
-            "function getHighestBid(uint256 groupId) view returns (address bidder, uint256 discount)",
-            "event GroupStarted(uint256 indexed groupId, string name)",
-            "event ContributionDeposited(uint256 indexed groupId, address indexed member, uint256 amount)",
-            "event BidPlaced(uint256 indexed groupId, address indexed bidder, uint256 discount)",
-            "event AuctionWinnerSelected(uint256 indexed groupId, address winner, uint256 payout, uint256 dividendPerMember)"
-        ];
+            const ROSCA_ABI = [
+                "function groupCount() view returns (uint256)",
+                "function createGroup(string name, uint256 contribution, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDiscount) external",
+                "function joinGroup(uint256 groupId) external",
+                "function depositContribution(uint256 groupId) external",
+                "function placeBid(uint256 groupId, uint256 discount) external",
+                "function settleAuction(uint256 groupId) external",
+                "function withdrawDividends() external",
+                "function isMemberOf(uint256 groupId, address user) view returns (bool)",
+                "function groups(uint256) view returns (string name, uint256 contributionAmount, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDefaultDiscount, uint256 currentCycle, uint256 cycleStartTime, uint256 totalEscrow, address creator, bool auctionSettled, bool isActive)",
+                "function getHighestBid(uint256 groupId) view returns (address bidder, uint256 discount)",
+                "event GroupStarted(uint256 indexed groupId, string name)",
+                "event ContributionDeposited(uint256 indexed groupId, address indexed member, uint256 amount)",
+                "event BidPlaced(uint256 indexed groupId, address indexed bidder, uint256 discount)",
+                "event AuctionWinnerSelected(uint256 indexed groupId, address winner, uint256 payout, uint256 dividendPerMember)"
+            ];
 
-        const ROSCA_ADDRESS = process.env.ROSCA_CONTRACT_ADDRESS;
-        console.log(`[Orchestrator] Using ROSCA at: ${ROSCA_ADDRESS}`);
+            const ROSCA_ADDRESS = process.env.ROSCA_CONTRACT_ADDRESS;
+            console.log(`[Orchestrator] Using ROSCA at: ${ROSCA_ADDRESS}`);
 
-        this.roscaContract = new ethers.Contract(ROSCA_ADDRESS, ROSCA_ABI, this.wallet);
+            this.roscaContract = new ethers.Contract(ROSCA_ADDRESS, ROSCA_ABI, this.wallet);
 
-        // --- Event Listeners ---
-        this._setupEventListeners();
+            // --- Event Listeners ---
+            this._setupEventListeners();
 
-        // --- Enable Premium Flows ---
-        try {
-            console.log('[Orchestrator] Initializing Yellow Network...');
-            await yellowService.initialize();
-            await yellowService.authenticate();
+            // --- Enable Premium Flows ---
+            try {
+                console.log('[Orchestrator] Initializing Yellow Network...');
+                await yellowService.initialize();
+                await yellowService.authenticate();
 
-            console.log('[Orchestrator] Initializing Arc Treasury...');
-            await treasuryService.initialize();
-        } catch (error) {
-            console.warn('[Orchestrator] Premium flows failed to initialize, continuing in basic mode:', error.message);
-        }
+                console.log('[Orchestrator] Initializing Arc Treasury...');
+                await treasuryService.initialize();
+            } catch (error) {
+                console.warn('[Orchestrator] Premium flows failed to initialize, continuing in basic mode:', error.message);
+            }
 
-        this.initialized = true;
-        console.log('[Orchestrator] Ready to process intents');
+            this.initialized = true;
+            this.initializing = false;
+            console.log('[Orchestrator] Ready to process intents');
+        })();
+        return this.initPromise;
     }
 
-    _setupEventListeners() {
-        this.roscaContract.on("GroupStarted", (groupId, name, event) => {
-            this._addActivity({
-                type: 'GROUP_STARTED',
-                groupId: groupId.toString(),
-                name,
-                txHash: event.log.transactionHash
-            });
-        });
 
-        this.roscaContract.on("ContributionDeposited", (groupId, member, amount, event) => {
-            this._addActivity({
-                type: 'CONTRIBUTION',
-                groupId: groupId.toString(),
-                member,
-                amount: ethers.formatUnits(amount, 6),
-                txHash: event.log.transactionHash
-            });
-        });
 
-        this.roscaContract.on("BidPlaced", (groupId, bidder, discount, event) => {
-            this._addActivity({
-                type: 'BID_PLACED',
-                groupId: groupId.toString(),
-                bidder,
-                discount: ethers.formatUnits(discount, 6),
-                txHash: event.log.transactionHash
-            });
-        });
-
-        this.roscaContract.on("AuctionWinnerSelected", (groupId, winner, payout, dividend, event) => {
-            this._addActivity({
-                type: 'AUCTION_SETTLED',
-                groupId: groupId.toString(),
-                winner,
-                payout: ethers.formatUnits(payout, 6),
-                txHash: event.log.transactionHash
-            });
-        });
-    }
-
-    _addActivity(item) {
-        item.timestamp = Date.now();
-        this.recentActivity.unshift(item);
-        if (this.recentActivity.length > this.MAX_ACTIVITY_LOGS) {
-            this.recentActivity.pop();
-        }
-        console.log(`[Activity] ${item.type}: Group ${item.groupId}`);
-    }
-
-    async getActiveCircles() {
+    async getActiveCircles(userAddress) {
         if (!this.initialized) await this.initialize();
 
         try {
             const count = await this.roscaContract.groupCount();
             const circles = [];
+            const targetAddress = userAddress || this.wallet.address;
 
-            // Get last 5 circles for dashboard
-            const start = count > 5n ? count - 4n : 1n;
+            // Get last 10 circles
+            const start = count > 10n ? count - 9n : 1n;
             for (let i = count; i >= start; i--) {
                 const g = await this.roscaContract.groups(i);
                 if (g.isActive) {
+                    const isMember = await this.roscaContract.isMemberOf(i, targetAddress);
                     circles.push({
                         id: i.toString(),
                         name: g.name,
                         contribution: ethers.formatUnits(g.contributionAmount, 6),
                         members: g.maxMembers.toString(),
                         cycle: g.currentCycle.toString(),
-                        escrow: ethers.formatUnits(g.totalEscrow, 6)
+                        escrow: ethers.formatUnits(g.totalEscrow, 6),
+                        creator: g.creator,
+                        isCreator: g.creator.toLowerCase() === targetAddress.toLowerCase(),
+                        isMember: isMember
                     });
                 }
             }

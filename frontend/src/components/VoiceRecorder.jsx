@@ -28,7 +28,11 @@ const VoiceRecorder = ({ onRecordingComplete, isProcessing }) => {
             };
 
             mediaRecorderRef.current.onstop = () => {
-                const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
+                const mimeType = mediaRecorderRef.current.mimeType;
+                const audioBlob = new Blob(chunksRef.current, { type: mimeType });
+
+                console.log(`[Recorder] Stopped. Size: ${audioBlob.size} bytes, Type: ${mimeType}`);
+
                 onRecordingComplete(audioBlob);
                 chunksRef.current = [];
                 if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);

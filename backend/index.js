@@ -104,9 +104,9 @@ app.get('/api/protocol-status', async (req, res) => {
         res.json({
             roscaAddress: process.env.ROSCA_CONTRACT_ADDRESS,
             arcBalance: treasury.balance,
-            yellowStatus: 'Online (Sandbox)',
-            ensIdentity: 'bol-defi.eth',
-            network: 'Sepolia'
+            yellowStatus: yellowService.isAuthenticated ? 'Online (Sandbox)' : 'Offline/Connecting',
+            ensIdentity: 'bol-defi.eth', // Root project identity
+            network: process.env.NETWORK || 'Sepolia'
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

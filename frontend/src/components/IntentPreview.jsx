@@ -16,9 +16,27 @@ const IntentPreview = ({ intent, onConfirm, onCancel }) => {
                     <span className="detail-label">TYPE</span>
                     <span className="detail-value type">{intent.type}</span>
                 </div>
+                {intent.params?.contributionAmount && (
+                    <div className="detail-item">
+                        <span className="detail-label">AMOUNT</span>
+                        <span className="detail-value">{intent.params.contributionAmount} USDC</span>
+                    </div>
+                )}
+                {intent.params?.groupId && (
+                    <div className="detail-item">
+                        <span className="detail-label">GROUP ID</span>
+                        <span className="detail-value">#{intent.params.groupId}</span>
+                    </div>
+                )}
+                {intent.params?.discountAmount && (
+                    <div className="detail-item">
+                        <span className="detail-label">BID DISCOUNT</span>
+                        <span className="detail-value">{intent.params.discountAmount} USDC</span>
+                    </div>
+                )}
                 <div className="detail-item">
-                    <span className="detail-label">CONFIDENCE</span>
-                    <span className="detail-value confidence">{(intent.confidence * 100).toFixed(1)}%</span>
+                    <span className="detail-label">NETWORK</span>
+                    <span className="detail-value yellow-optimized">YELLOW OPTIMIZED</span>
                 </div>
             </div>
 

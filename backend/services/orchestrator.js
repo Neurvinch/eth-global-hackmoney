@@ -75,6 +75,10 @@ class TransactionOrchestrator {
 
                 console.log('[Orchestrator] Initializing Arc Treasury...');
                 await treasuryService.initialize();
+
+                // Priority Approval: Ensure first transaction doesn't fail on allowance
+                console.log('[Orchestrator] Performing priority USDC approval...');
+                await treasuryService.approveROSCAContract(ROSCA_ADDRESS, 1000000);
             } catch (error) {
                 console.warn('[Orchestrator] Premium flows failed to initialize, continuing in basic mode:', error.message);
             }
@@ -282,9 +286,37 @@ class TransactionOrchestrator {
 
     async _handleContribute(params) {
         const { groupId } = params;
+
+        // Ensure orchestrator has approved ROSCA to spend USDC
+        await this._ensureAllowance(groupId);
+
         const tx = await this.roscaContract.depositContribution(groupId);
         const receipt = await tx.wait();
         return { success: true, txHash: receipt.hash, groupId };
+    }
+
+    async _ensureAllowance(groupId) {
+        try {
+            const g = await this.roscaContract.groups(groupId);
+            const amountNeeded = g.contributionAmount;
+
+            const networkKey = process.env.NETWORK || 'arc_testnet';
+            const usdcAddress = treasuryService.USDC_ADDRESSES[networkKey];
+
+            // Check current allowance
+            const currentAllowance = await treasuryService.usdcContract.allowance(
+                this.wallet.address,
+                process.env.ROSCA_CONTRACT_ADDRESS
+            );
+
+            if (currentAllowance < amountNeeded) {
+                console.log(`[Orchestrator] Allowance insufficient. Approving 1M USDC...`);
+                // Infinite-ish approval for demo (1 Million)
+                await treasuryService.approveROSCAContract(process.env.ROSCA_CONTRACT_ADDRESS, 1000000);
+            }
+        } catch (error) {
+            console.warn('[Orchestrator] Allowance check failed (continuing anyway):', error.message);
+        }
     }
 
     async _handleBid(params) {

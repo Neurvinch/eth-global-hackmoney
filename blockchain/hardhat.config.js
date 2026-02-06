@@ -21,7 +21,7 @@ export default {
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
         },
         arc_testnet: {
-            url: process.env.ARC_RPC_URL || "https://rpc.testnet.arc.network",
+            url: process.env.ARC_RPC_URL || "https://arc-testnet.g.alchemy.com/v2/ByaOVE3FIIAjYOQ9IWDMz",
             accounts: process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
             chainId: 5042002
         },

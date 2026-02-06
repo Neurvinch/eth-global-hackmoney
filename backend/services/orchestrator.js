@@ -31,7 +31,7 @@ class TransactionOrchestrator {
 
         const networkKey = process.env.NETWORK || 'sepolia';
         const RPC_URLS = {
-            arc_testnet: 'https://rpc.testnet.arc.network',
+            arc_testnet: process.env.ARC_RPC_URL || 'https://rpc.testnet.arc.network',
             sepolia: process.env.ALCHEMY_RPC_URL || process.env.SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
         };
 

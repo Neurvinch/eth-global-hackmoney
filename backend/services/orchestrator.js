@@ -32,7 +32,7 @@ class TransactionOrchestrator {
         const networkKey = process.env.NETWORK || 'sepolia';
         const RPC_URLS = {
             arc_testnet: 'https://rpc.testnet.arc.network',
-            sepolia: process.env.SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
+            sepolia: process.env.ALCHEMY_RPC_URL || process.env.SEPOLIA_RPC_URL || 'https://eth-sepolia.g.alchemy.com/v2/demo'
         };
 
         this.provider = new ethers.JsonRpcProvider(RPC_URLS[networkKey]);
@@ -65,8 +65,8 @@ class TransactionOrchestrator {
         // --- Enable Premium Flows ---
         try {
             console.log('[Orchestrator] Initializing Yellow Network...');
-            // await yellowService.initialize();
-            // await yellowService.authenticate();
+            await yellowService.initialize();
+            await yellowService.authenticate();
 
             console.log('[Orchestrator] Initializing Arc Treasury...');
             await treasuryService.initialize();
@@ -224,13 +224,14 @@ class TransactionOrchestrator {
         console.log(`[Orchestrator] Group created: ${receipt.hash}`);
 
         // 3. ENS: Store group metadata if requested (e.g., description)
-        // In local demo, we just log it as identity is already resolved.
-        console.log(`[Orchestrator] ENS Identity Resolved for: ${groupName}.bol-defi.eth`);
+        const ensName = `${groupName.toLowerCase().replace(/\s+/g, '-')}.bol-defi.eth`;
+        console.log(`[Orchestrator] ENS Identity Resolved for: ${ensName}`);
 
         return {
             success: true,
             txHash: receipt.hash,
             groupName,
+            ensName,
             treasuryBalance: balance.formatted
         };
     }
@@ -254,10 +255,12 @@ class TransactionOrchestrator {
 
         console.log(`[Orchestrator] Processing bid for Group ${groupId}`);
 
-        // Yellow Network Flow: Record off-chain bid first (Instant)
-        await yellowService.recordBid(groupId, this.wallet.address, discountAmount);
+        // Yellow Network Flow: Record off-chain bid first (Instant, Zero Gas)
+        // In a full production app, this would be signed and shared via Yellow Network
+        const offChainBid = await yellowService.recordBid(groupId, this.wallet.address, discountAmount);
 
-        // Then sync to chain
+        // For the hackathon demo, we still sync to chain so the UI updates globally, 
+        // but we flag it as an optimized off-chain-first bid.
         const tx = await this.roscaContract.placeBid(groupId, ethers.parseUnits(discountAmount.toString(), 6));
         const receipt = await tx.wait();
 
@@ -266,7 +269,8 @@ class TransactionOrchestrator {
             txHash: receipt.hash,
             groupId,
             bidAmount: discountAmount,
-            mode: 'Yellow-Optimized'
+            mode: 'Yellow-Offchain-Optimized',
+            offChainRef: offChainBid.timestamp
         };
     }
 

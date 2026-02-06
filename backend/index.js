@@ -14,6 +14,12 @@ const port = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Ensure uploads directory exists
+if (!fs.existsSync('uploads/')) {
+    fs.mkdirSync('uploads/');
+    console.log('[Server] Created uploads directory');
+}
+
 // Setup Multer for audio uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {

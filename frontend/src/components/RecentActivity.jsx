@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Clock, Zap, Target, Package } from 'lucide-react';
 
 const RecentActivity = () => {
     const [activities, setActivities] = useState([]);
@@ -20,32 +21,38 @@ const RecentActivity = () => {
         return () => clearInterval(interval);
     }, []);
 
+    const getIcon = (type) => {
+        switch (type) {
+            case 'GROUP_STARTED': return <Package size={14} className="text-blue-400" />;
+            case 'CONTRIBUTION': return <Target size={14} className="text-emerald-400" />;
+            case 'BID_PLACED': return <Zap size={14} className="text-amber-400" />;
+            default: return <Clock size={14} className="text-purple-400" />;
+        }
+    }
+
     if (activities.length === 0) return (
-        <div className="recent-activity empty">
-            <h3 className="section-title">Live Transaction Feed</h3>
-            <p className="no-activity">Waiting for blockchain events...</p>
+        <div className="bg-black/10 rounded-2xl p-6 text-center border border-dashed border-white/10">
+            <div className="live-dot mx-auto mb-4 bg-dim shadow-none"></div>
+            <p className="text-dim text-[11px] font-bold uppercase tracking-tighter">Observing Chain Events...</p>
         </div>
     );
 
     return (
-        <div className="recent-activity">
-            <h3 className="section-title"><span className="live-dot"></span>Live Transaction Feed</h3>
-            <div className="activity-list">
-                {activities.map((act, i) => (
-                    <div key={i} className="activity-card animate-in">
-                        <div className="activity-header">
-                            <span className={`status-pill ${act.type.toLowerCase()}`}>{act.type.replace('_', ' ')}</span>
-                            <span className="activity-time">{new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+        <div className="activity-feed-v2">
+            {activities.map((act, i) => (
+                <div key={act.id || i} className="feed-card animate-in" style={{ animationDelay: `${i * 0.1}s` }}>
+                    <div className="feed-meta">
+                        <div className="flex items-center gap-2">
+                            {getIcon(act.type)}
+                            <span className="feed-tag">{act.type.replace('_', ' ')}</span>
                         </div>
-                        <div className="activity-desc">
-                            {act.type === 'GROUP_STARTED' && <span>Circle <strong>{act.name}</strong> is now live on Sepolia.</span>}
-                            {act.type === 'CONTRIBUTION' && <span><strong>{act.member.slice(0, 6)}...</strong> contributed <strong>{act.amount} USDC</strong></span>}
-                            {act.type === 'BID_PLACED' && <span><strong>{act.bidder.slice(0, 6)}...</strong> bid <strong>{act.discount} USDC</strong> (Off-chain)</span>}
-                            {act.type === 'AUCTION_SETTLED' && <span>Auction settled! Winner: <strong>{act.winner.slice(0, 6)}...</strong></span>}
-                        </div>
+                        <span className="feed-time">{act.timestamp}</span>
                     </div>
-                ))}
-            </div>
+                    <p className="text-xs text-main leading-relaxed tracking-tight">
+                        {act.description}
+                    </p>
+                </div>
+            ))}
         </div>
     );
 };

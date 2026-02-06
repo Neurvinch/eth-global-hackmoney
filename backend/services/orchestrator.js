@@ -177,11 +177,20 @@ class TransactionOrchestrator {
                 return await this._handleBid(intent.params);
             case 'FINALIZE':
                 return await this._handleSettleAuction(intent.params);
+            case 'WITHDRAW_DIVIDENDS':
+                return await this._handleWithdrawDividends();
             case 'CHECK_TREASURY':
                 return await this._handleCheckTreasury();
             default:
                 throw new Error(`Unknown intent type: ${intent.type}`);
         }
+    }
+
+    async _handleWithdrawDividends() {
+        console.log('[Orchestrator] Withdrawing dividends for member...');
+        const tx = await this.roscaContract.withdrawDividends();
+        const receipt = await tx.wait();
+        return { success: true, txHash: receipt.hash, type: 'WITHDRAWAL' };
     }
 
     async _handleCreateGroup(params) {
@@ -291,10 +300,80 @@ class TransactionOrchestrator {
         };
     }
 
+    async getMemberStatus(address) {
+        if (!this.initialized) await this.initialize();
+        const balance = await this.roscaContract.userBalance(address);
+        return {
+            address,
+            dividends: ethers.formatUnits(balance, 6),
+            provider: 'Arc Protocol'
+        };
+    }
+
+    async _logActivity(type, description) {
+        this.recentActivity.unshift({
+            type,
+            description,
+            timestamp: new Date().toLocaleTimeString(),
+            id: Math.random().toString(36).substr(2, 9)
+        });
+        if (this.recentActivity.length > this.MAX_ACTIVITY_LOGS) {
+            this.recentActivity.pop();
+        }
+    }
+
+    _setupEventListeners() {
+        this.roscaContract.on("GroupStarted", (groupId, name) => {
+            this._logActivity('GROUP_STARTED', `Savings Circle "${name}" has been created.`);
+        });
+
+        this.roscaContract.on("ContributionDeposited", (groupId, member, amount) => {
+            this._logActivity('CONTRIBUTION', `Member ${member.substring(0, 6)} deposited ${ethers.formatUnits(amount, 6)} USDC.`);
+        });
+
+        this.roscaContract.on("BidPlaced", (groupId, bidder, discount) => {
+            this._logActivity('BID_PLACED', `New bid of ${ethers.formatUnits(discount, 6)} USDC on Circle #${groupId}.`);
+        });
+
+        this.roscaContract.on("AuctionWinnerSelected", (groupId, winner, payout, dividend) => {
+            this._logActivity('AUCTION_SETTLED', `Circle #${groupId} settled! Winner: ${winner.substring(0, 6)}. Dividend: ${ethers.formatUnits(dividend, 6)} USDC.`);
+        });
+    }
+
     async startAuctionMonitor() {
-        // Implementation omitted for brevity in this conversion
+        console.log('[Orchestrator] Starting Autonomous Auction Monitor...');
+        setInterval(async () => {
+            try {
+                const count = await this.roscaContract.groupCount();
+                const now = Math.floor(Date.now() / 1000);
+
+                for (let i = 1; i <= count; i++) {
+                    const g = await this.roscaContract.groups(i);
+                    const auctionEndTime = Number(g.cycleStartTime) + Number(g.auctionDuration);
+
+                    if (g.isActive && !g.auctionSettled && now > auctionEndTime) {
+                        console.log(`[Monitor] Auction for Group #${i} expired. Settling...`);
+
+                        // Check if we have enough contributions to settle
+                        if (g.totalEscrow >= g.contributionAmount * g.maxMembers) {
+                            const tx = await this.roscaContract.settleAuction(i);
+                            await tx.wait();
+                            console.log(`[Monitor] Group #${i} settled successfully.`);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('[Monitor] Error checking auctions:', error.message);
+            }
+        }, 30000); // Check every 30 seconds
     }
 }
 
 const orchestrator = new TransactionOrchestrator();
+
+// Startup autonomous engines
+orchestrator.initialize().then(() => {
+    orchestrator.startAuctionMonitor();
+});
+
 export default orchestrator;

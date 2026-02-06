@@ -12,8 +12,7 @@
 }
 
 body {
-    margin: 0;
-    padding: 0;
+
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--bg-dark);
     color: var(--text-main);
@@ -468,10 +467,15 @@ body {
     font-size: 0.75rem;
 }
 
-.loading-state {
-    text-align: center;
-    padding: 1rem;
-    font-size: 0.8rem;
-    color: var(--text-muted);
-    font-style: italic;
+.yellow-optimized {
+    color: #fbbf24 !important;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.detail-value.yellow-optimized {
+    background: rgba(251, 191, 36, 0.1);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    letter-spacing: 0.05em;
 }

@@ -101,12 +101,14 @@ app.get('/api/protocol-status', async (req, res) => {
     try {
         const intent = { type: 'CHECK_TREASURY' };
         const treasury = await orchestrator.executeIntent(intent);
+        const memberStatus = await orchestrator.getMemberStatus(orchestrator.wallet.address);
 
         res.json({
             roscaAddress: process.env.ROSCA_CONTRACT_ADDRESS,
             arcBalance: treasury.balance,
+            dividends: memberStatus.dividends,
             yellowStatus: yellowService.isAuthenticated ? 'Online (Sandbox)' : 'Offline/Connecting',
-            ensIdentity: 'bol-defi.eth', // Root project identity
+            ensIdentity: 'bol-defi.eth',
             network: process.env.NETWORK || 'Sepolia'
         });
     } catch (error) {

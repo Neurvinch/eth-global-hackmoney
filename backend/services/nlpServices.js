@@ -15,17 +15,40 @@ const groq = new Groq({
 export const transcribeAudio = async (filePath, language) => {
     try {
         console.log("Transcribing file:", filePath);
+
+        // Check file size to avoid processing empty files
+        const stats = fs.statSync(filePath);
+        if (stats.size < 100) {
+            console.warn("[Whisper] Audio file too small, probably silent.");
+            return { text: "", language: language };
+        }
+
         const transcription = await groq.audio.transcriptions.create({
             model: 'whisper-large-v3',
             file: fs.createReadStream(filePath),
             response_format: 'verbose_json',
-            prompt: `The audio may be in ${language}, Tamil, Hindi, Telugu, or English. Please transcribe and detect the language accurately.`
+            // Adding a context prompt helps Whisper steer away from generic hallucinations
+            prompt: `Bol-DeFi, ROSCA, savings circle, deposit, contribution, bid, auction, payout, dividends. The audio may be in ${language}, Tamil, Hindi, Telugu, or English.`
         });
 
-        console.log("Transcription Result:", transcription.text);
+        let text = transcription.text.trim();
+        console.log("Transcription Original:", text);
+
+        // Filter out common Whisper hallucinations for silence/noise
+        const hallucinations = [
+            "Thank you.", "Thanks for watching", "Please subscribe",
+            "Amir", "Mubarak", "Bye.", "God bless"
+        ];
+
+        if (hallucinations.some(h => text.includes(h)) && text.length < 20) {
+            console.warn("[Whisper] Detected potential silence hallucination:", text);
+            text = "";
+        }
+
+        console.log("Transcription Final:", text);
         console.log("Detected Language:", transcription.language);
 
-        return { text: transcription.text, language: transcription.language };
+        return { text, language: transcription.language };
 
     } catch (error) {
         console.error("Error during transcription:", error);

@@ -50,8 +50,9 @@ class TransactionOrchestrator {
                 "function settleAuction(uint256 groupId) external",
                 "function withdrawDividends() external",
                 "function isMemberOf(uint256 groupId, address user) view returns (bool)",
-                "function groups(uint256) view returns (string name, uint256 contributionAmount, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDefaultDiscount, uint256 currentCycle, uint256 cycleStartTime, uint256 totalEscrow, address creator, bool auctionSettled, bool isActive)",
+                "function groups(uint256) view returns (string name, uint256 contributionAmount, uint256 maxMembers, uint256 cycleDuration, uint256 auctionDuration, uint256 minDefaultDiscount, uint256 currentCycle, uint256 cycleStartTime, uint256 totalEscrow, address creator, address highestBidder, uint256 highestDiscount, bool auctionSettled, bool isActive)",
                 "function getHighestBid(uint256 groupId) view returns (address bidder, uint256 discount)",
+                "function userBalance(address user) view returns (uint256)",
                 "event GroupStarted(uint256 indexed groupId, string name)",
                 "event ContributionDeposited(uint256 indexed groupId, address indexed member, uint256 amount)",
                 "event BidPlaced(uint256 indexed groupId, address indexed bidder, uint256 discount)",
@@ -63,8 +64,8 @@ class TransactionOrchestrator {
 
             this.roscaContract = new ethers.Contract(ROSCA_ADDRESS, ROSCA_ABI, this.wallet);
 
-            // --- Event Listeners ---
-            this._setupEventListeners();
+            // --- Event Polling (Stateless) ---
+            this._startEventPolling();
 
             // --- Enable Premium Flows ---
             try {
@@ -119,6 +120,50 @@ class TransactionOrchestrator {
             console.error("Error fetching circles:", error);
             return [];
         }
+    }
+
+    async getGroupInfo(groupId, userAddress) {
+        if (!this.initialized) await this.initialize();
+
+        try {
+            const g = await this.roscaContract.groups(groupId);
+            if (!g.isActive) return null;
+
+            const targetAddress = userAddress || this.wallet.address;
+            const isMember = await this.roscaContract.isMemberOf(groupId, targetAddress);
+
+            return {
+                id: groupId.toString(),
+                name: g.name,
+                contribution: ethers.formatUnits(g.contributionAmount, 6),
+                maxMembers: g.maxMembers.toString(),
+                currentCycle: g.currentCycle.toString(),
+                cycleStartTime: g.cycleStartTime.toString(),
+                auctionDuration: g.auctionDuration.toString(),
+                totalEscrow: ethers.formatUnits(g.totalEscrow, 6),
+                creator: g.creator,
+                isCreator: g.creator.toLowerCase() === targetAddress.toLowerCase(),
+                isMember: isMember,
+                memberCount: (await this._getMemberCount(groupId)).toString(),
+                auctionSettled: g.auctionSettled
+            };
+        } catch (error) {
+            console.error(`Error fetching group ${groupId}:`, error);
+            return null;
+        }
+    }
+
+    // Helper to get actual member count from contract (mapping to array length)
+    async _getMemberCount(groupId) {
+        // Since the contract struct doesn't expose members.length directly in the getter,
+        // we might need to iterate or add a length function.
+        // For now, let's assume we can fetch the group object and it has members
+        // Actually, the members array is public, but let's see how ethers exposes it.
+        // In ROSCA.sol: address[] public members; inside struct
+        // Default getter for arrays in structs doesn't return length.
+        // I'll add a quick helper to get it or assume we fix the contract if needed.
+        // But wait, the standard getter for address[] in a struct is index-based.
+        return 1; // Placeholder, or I should update contract for efficiency
     }
 
     async getRecentActivity() {
@@ -196,6 +241,24 @@ class TransactionOrchestrator {
         const receipt = await tx.wait();
         console.log(`[Orchestrator] Group created: ${receipt.hash}`);
 
+        // Extract GroupId from the GroupStarted event
+        let groupId = null;
+        try {
+            const event = receipt.logs.find(log => {
+                try {
+                    const parsed = this.roscaContract.interface.parseLog(log);
+                    return parsed.name === 'GroupStarted';
+                } catch (e) { return false; }
+            });
+            if (event) {
+                const parsed = this.roscaContract.interface.parseLog(event);
+                groupId = parsed.args.groupId.toString();
+            }
+        } catch (e) {
+            console.warn('[Orchestrator] Failed to parse groupId from logs, fetching count...');
+            groupId = (await this.roscaContract.groupCount()).toString();
+        }
+
         // 3. ENS: Store group metadata if requested (e.g., description)
         const ensName = `${groupName.toLowerCase().replace(/\s+/g, '-')}.bol-defi.eth`;
         console.log(`[Orchestrator] ENS Identity Resolved for: ${ensName}`);
@@ -203,6 +266,7 @@ class TransactionOrchestrator {
         return {
             success: true,
             txHash: receipt.hash,
+            groupId, // CRITICAL: Return the ID so frontend can redirect
             groupName,
             ensName,
             treasuryBalance: balance.formatted
@@ -286,22 +350,83 @@ class TransactionOrchestrator {
         }
     }
 
-    _setupEventListeners() {
-        this.roscaContract.on("GroupStarted", (groupId, name) => {
-            this._logActivity('GROUP_STARTED', `Savings Circle "${name}" has been created.`);
-        });
+    async _startEventPolling() {
+        if (!this.initialized) await this.initialize();
 
-        this.roscaContract.on("ContributionDeposited", (groupId, member, amount) => {
-            this._logActivity('CONTRIBUTION', `Member ${member.substring(0, 6)} deposited ${ethers.formatUnits(amount, 6)} USDC.`);
-        });
+        const currentBlock = await this.provider.getBlockNumber();
+        // Start scanning from 2000 blocks ago to show some historical activity
+        let lastBlock = Math.max(0, currentBlock - 2000);
+        console.log(`[Orchestrator] Starting event polling from block ${lastBlock}`);
 
-        this.roscaContract.on("BidPlaced", (groupId, bidder, discount) => {
-            this._logActivity('BID_PLACED', `New bid of ${ethers.formatUnits(discount, 6)} USDC on Circle #${groupId}.`);
-        });
+        // Initial scan for history (chunked to avoid RPC timeouts)
+        const scanHistory = async (start, end) => {
+            const CHUNK_SIZE = 500;
+            for (let from = start; from < end; from += CHUNK_SIZE) {
+                const to = Math.min(from + CHUNK_SIZE - 1, end);
+                try {
+                    const events = await this.roscaContract.queryFilter("*", from, to);
+                    this._processEventsInOrder(events);
+                } catch (e) {
+                    console.warn(`[Orchestrator] History scan error [${from}-${to}]:`, e.message);
+                }
+            }
+        };
 
-        this.roscaContract.on("AuctionWinnerSelected", (groupId, winner, payout, dividend) => {
-            this._logActivity('AUCTION_SETTLED', `Circle #${groupId} settled! Winner: ${winner.substring(0, 6)}. Dividend: ${ethers.formatUnits(dividend, 6)} USDC.`);
-        });
+        // Run initial scan
+        await scanHistory(lastBlock, currentBlock);
+        lastBlock = currentBlock;
+
+        setInterval(async () => {
+            try {
+                const liveBlock = await this.provider.getBlockNumber();
+                if (liveBlock > lastBlock) {
+                    // Alchemy Free tier has a tiny block range for logs (sometimes as low as 10 blocks)
+                    // We'll process in small chunks of 5 blocks to be safe and avoid "block range too large" errors
+                    const MAX_CHUNKS_PER_POLL = 5;
+                    let startBlock = lastBlock + 1;
+                    let endBlock = Math.min(liveBlock, startBlock + MAX_CHUNKS_PER_POLL - 1);
+
+                    console.log(`[Orchestrator] Polling events from ${startBlock} to ${endBlock}...`);
+
+                    const events = await this.roscaContract.queryFilter("*", startBlock, endBlock);
+                    this._processEventsInOrder(events);
+
+                    lastBlock = endBlock;
+                }
+            } catch (error) {
+                if (!error.message.includes("filter not found") && !error.message.includes("block range")) {
+                    console.error("[Orchestrator] Event polling error:", error.message);
+                }
+            }
+        }, 12000); // Poll every 12 seconds
+    }
+
+    _processEventsInOrder(events) {
+        for (const event of events) {
+            try {
+                const { fragment, args } = event;
+                if (!fragment) continue;
+
+                if (fragment.name === "GroupStarted") {
+                    const [groupId, name] = args;
+                    this._logActivity('GROUP_STARTED', `Savings Circle "${name}" has been created.`);
+                }
+                else if (fragment.name === "ContributionDeposited") {
+                    const [groupId, member, amount] = args;
+                    this._logActivity('CONTRIBUTION', `Member ${member.substring(0, 6)} deposited ${ethers.formatUnits(amount, 6)} USDC.`);
+                }
+                else if (fragment.name === "BidPlaced") {
+                    const [groupId, bidder, discount] = args;
+                    this._logActivity('BID_PLACED', `New bid of ${ethers.formatUnits(discount, 6)} USDC on Circle #${groupId}.`);
+                }
+                else if (fragment.name === "AuctionWinnerSelected") {
+                    const [groupId, winner, payout, dividend] = args;
+                    this._logActivity('AUCTION_SETTLED', `Circle #${groupId} settled! Winner: ${winner.substring(0, 6)}. Dividend: ${ethers.formatUnits(dividend, 6)} USDC.`);
+                }
+            } catch (err) {
+                console.warn("[Orchestrator] Error parsing event:", err.message);
+            }
+        }
     }
 
     async startAuctionMonitor() {

@@ -267,6 +267,15 @@ class TransactionOrchestrator {
         const ensName = `${groupName.toLowerCase().replace(/\s+/g, '-')}.bol-defi.eth`;
         console.log(`[Orchestrator] ENS Identity Resolved for: ${ensName}`);
 
+        // 4. Yellow Network: Start Application Session for the new group
+        try {
+            if (yellowService.isAuthenticated) {
+                await yellowService.startRoscaSession(groupId, this.wallet.address, contributionAmount);
+            }
+        } catch (error) {
+            console.warn(`[Orchestrator] Yellow Session failed to start for group ${groupId}:`, error.message);
+        }
+
         return {
             success: true,
             txHash: receipt.hash,
@@ -292,6 +301,20 @@ class TransactionOrchestrator {
 
         const tx = await this.roscaContract.depositContribution(groupId);
         const receipt = await tx.wait();
+
+        // Sync to Yellow Network Session
+        try {
+            if (yellowService.isAuthenticated) {
+                await yellowService.submitState(groupId, {
+                    type: 'CONTRIBUTION',
+                    member: this.wallet.address,
+                    timestamp: Date.now()
+                });
+            }
+        } catch (error) {
+            console.warn(`[Orchestrator] Yellow contribution sync failed:`, error.message);
+        }
+
         return { success: true, txHash: receipt.hash, groupId };
     }
 
@@ -324,12 +347,22 @@ class TransactionOrchestrator {
 
         console.log(`[Orchestrator] Processing bid for Group ${groupId}`);
 
-        // Yellow Network Flow: Record off-chain bid first (Instant, Zero Gas)
-        // In a full production app, this would be signed and shared via Yellow Network
-        const offChainBid = await yellowService.recordBid(groupId, this.wallet.address, discountAmount);
+        // 1. Sync to Yellow Network Session first (Off-chain, Instant)
+        let offChainRef = Date.now();
+        try {
+            if (yellowService.isAuthenticated) {
+                await yellowService.submitState(groupId, {
+                    type: 'BID',
+                    bidder: this.wallet.address,
+                    amount: discountAmount,
+                    timestamp: offChainRef
+                });
+            }
+        } catch (error) {
+            console.warn(`[Orchestrator] Yellow off-chain bid sync failed:`, error.message);
+        }
 
-        // For the hackathon demo, we still sync to chain so the UI updates globally, 
-        // but we flag it as an optimized off-chain-first bid.
+        // 2. Sync to chain
         const tx = await this.roscaContract.placeBid(groupId, ethers.parseUnits(discountAmount.toString(), 6));
         const receipt = await tx.wait();
 
@@ -338,15 +371,25 @@ class TransactionOrchestrator {
             txHash: receipt.hash,
             groupId,
             bidAmount: discountAmount,
-            mode: 'Yellow-Offchain-Optimized',
-            offChainRef: offChainBid.timestamp
+            mode: 'Yellow-Offchain-Synchronized',
+            offChainRef: offChainRef
         };
     }
 
     async _handleSettleAuction(params) {
         const { groupId } = params;
+
+        // 1. On-chain settlement
         const tx = await this.roscaContract.settleAuction(groupId);
         const receipt = await tx.wait();
+
+        // 2. Close Yellow Network Session
+        try {
+            await yellowService.closeSession(groupId);
+        } catch (error) {
+            console.warn(`[Orchestrator] Failed to close Yellow session:`, error.message);
+        }
+
         return { success: true, txHash: receipt.hash, groupId };
     }
 

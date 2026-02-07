@@ -1,0 +1,119 @@
+[Skip to main content](https://docs.arc.network/arc/concepts/welcome-to-arc#content-area)
+[Arc Docs home page](https://docs.arc.network/)
+- [Status](https://status.arc.network)
+- [Blog](https://arc.network/blog)
+- [Community](https://community.arc.network)
+- [Arc.network](https://arc.network)
+[Status](https://status.arc.network)
+[Blog](https://arc.network/blog)
+[Community](https://community.arc.network)
+[Arc.network](https://arc.network)
+- [Explorer](https://testnet.arcscan.app)
+- [Faucet](https://faucet.circle.com)
+[Explorer](https://testnet.arcscan.app)
+[Faucet](https://faucet.circle.com)
+
+##### Get Started
+- [Welcome to Arc](https://docs.arc.network/arc/concepts/welcome-to-arc)
+- [Deploy on Arc](https://docs.arc.network/arc/tutorials/deploy-on-arc)
+- [Connect to Arc](https://docs.arc.network/arc/references/connect-to-arc)
+[Welcome to Arc](https://docs.arc.network/arc/concepts/welcome-to-arc)
+[Deploy on Arc](https://docs.arc.network/arc/tutorials/deploy-on-arc)
+[Connect to Arc](https://docs.arc.network/arc/references/connect-to-arc)
+
+##### Build on Arc
+- Make Payments
+- Send Funds Crosschain
+- Manage Smart Contracts
+
+##### References
+- [Contract Addresses](https://docs.arc.network/arc/references/contract-addresses)
+- [Gas and Fees](https://docs.arc.network/arc/references/gas-and-fees)
+[Contract Addresses](https://docs.arc.network/arc/references/contract-addresses)
+[Gas and Fees](https://docs.arc.network/arc/references/gas-and-fees)
+
+##### Key Features
+- [Stable Fee Design](https://docs.arc.network/arc/concepts/stable-fee-design)
+- [Deterministic Finality](https://docs.arc.network/arc/concepts/deterministic-finality)
+- [Opt-in Privacy](https://docs.arc.network/arc/concepts/opt-in-privacy)
+[Stable Fee Design](https://docs.arc.network/arc/concepts/stable-fee-design)
+[Deterministic Finality](https://docs.arc.network/arc/concepts/deterministic-finality)
+[Opt-in Privacy](https://docs.arc.network/arc/concepts/opt-in-privacy)
+
+##### Architecture
+- [System Overview](https://docs.arc.network/arc/concepts/system-overview)
+- [Consensus Layer](https://docs.arc.network/arc/concepts/consensus-layer)
+- [Execution Layer](https://docs.arc.network/arc/concepts/execution-layer)
+- [EVM Compatibility](https://docs.arc.network/arc/references/evm-compatibility)
+[System Overview](https://docs.arc.network/arc/concepts/system-overview)
+[Consensus Layer](https://docs.arc.network/arc/concepts/consensus-layer)
+[Execution Layer](https://docs.arc.network/arc/concepts/execution-layer)
+[EVM Compatibility](https://docs.arc.network/arc/references/evm-compatibility)
+
+##### Tools
+- [Account Abstraction](https://docs.arc.network/arc/tools/account-abstraction)
+- [Block Explorers](https://docs.arc.network/arc/tools/block-explorers)
+- [Compliance](https://docs.arc.network/arc/tools/compliance-vendors)
+- [Data Indexers](https://docs.arc.network/arc/tools/data-indexers)
+- [Node Providers](https://docs.arc.network/arc/tools/node-providers)
+[Account Abstraction](https://docs.arc.network/arc/tools/account-abstraction)
+[Block Explorers](https://docs.arc.network/arc/tools/block-explorers)
+[Compliance](https://docs.arc.network/arc/tools/compliance-vendors)
+[Data Indexers](https://docs.arc.network/arc/tools/data-indexers)
+[Node Providers](https://docs.arc.network/arc/tools/node-providers)
+- [Core principles](https://docs.arc.network/arc/concepts/welcome-to-arc#core-principles)
+- [What you can build](https://docs.arc.network/arc/concepts/welcome-to-arc#what-you-can-build)
+[Core principles](https://docs.arc.network/arc/concepts/welcome-to-arc#core-principles)
+[What you can build](https://docs.arc.network/arc/concepts/welcome-to-arc#what-you-can-build)
+
+# Welcome to Arc
+
+An open Layer-1 blockchain purpose-built to unite programmable money and onchain innovation with real-world economic activity.
+[Deploy on Arc](https://docs.arc.network/arc/tutorials/deploy-on-arc)
+
+## [​](https://docs.arc.network/arc/concepts/welcome-to-arc#core-principles)Core principles
+[​](https://docs.arc.network/arc/concepts/welcome-to-arc#core-principles)
+Purpose-built, not general-purpose
+Open and composable by default
+Market-neutral and multichain-aligned
+Built to coordinate, not control
+Trusted infrastructure, end-to-end
+
+## [​](https://docs.arc.network/arc/concepts/welcome-to-arc#what-you-can-build)What you can build
+[​](https://docs.arc.network/arc/concepts/welcome-to-arc#what-you-can-build)
+Onchain credit with offchain trust
+- Identity-based lending protocols using verifiable credentials
+- Reputation-driven credit systems tied to cash flow or payment history
+- SMB and consumer credit apps serving under-served markets
+Capital markets settlement and tokenized collateral
+- Tokenized securities platforms with instant DvP
+- Collateral management systems for stablecoin-backed margin
+- Tokenized funds and structured products issued onchain
+- Prediction markets trading real-time data, forecasts, and risk signals
+Stablecoin FX
+[stablecoin conversion and FX](https://developers.circle.com/stablefx)
+- Perpetuals and derivatives exchanges on stablecoin pairs
+- Swap APIs for programmatic stablecoin-to-stablecoin conversion
+- Treasury tools for multi-currency rebalancing and cross-border payouts
+Agentic commerce
+- AI-mediated marketplaces where agents buy, sell, and execute transactions
+- Machine-to-machine payment networks for IoT and devices
+- Coordination systems for agents to post, match, and settle intents in real
+time
+Cross-border payments and payouts
+- Remittance platforms for consumer transfers
+- Payout systems for marketplaces, gig workers, and global payroll
+- Trade finance platforms with tokenized invoices and automated onchain
+settlement
+Was this page helpful?
+[Deploy on Arc](https://docs.arc.network/arc/tutorials/deploy-on-arc)
+[Arc Docs home page](https://docs.arc.network/)
+[x](http://x.com/arc)
+[discord](https://discord.com/invite/buildonarc)
+[Arc.network](https://arc.network)
+[Terms of Service](https://docs.arc.network/terms)
+[Privacy Policy](https://www.circle.com/legal/privacy-policy)
+[Cookie Policy](https://www.circle.com/legal/cookie-policy)
+[x](http://x.com/arc)
+[discord](https://discord.com/invite/buildonarc)
+[Powered by](https://www.mintlify.com?utm_campaign=poweredBy&utm_medium=referral&utm_source=arc-docs)
